@@ -3,8 +3,6 @@ import * as tf from '@tensorflow/tfjs';
 import * as cocoSsd from '@tensorflow-models/coco-ssd';
 import type { Ingredient } from '~/types';
 
-// All COCO-SSD detectable classes - let the camera see everything!
-
 interface Detection {
   bbox: number[];
   class: string;
@@ -25,7 +23,6 @@ export function useIngredientDetection() {
 
   const modelRef = useRef<cocoSsd.ObjectDetection | null>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const detectedClassesRef = useRef<Set<string>>(new Set());
 
   // Load TensorFlow.js model on component mount
   useEffect(() => {
@@ -60,7 +57,8 @@ export function useIngredientDetection() {
 
   // Convert detection results to ingredients
   const processDetections = useCallback((detections: Detection[]) => {
-    const newIngredients: Ingredient[] = [];
+    // Process all detections in the current frame
+    const currentFrameIngredients: Ingredient[] = [];
 
     detections.forEach((detection, index) => {
       const className = detection.class.toLowerCase();
@@ -68,33 +66,31 @@ export function useIngredientDetection() {
       // Lower confidence threshold - let users decide what's relevant
       if (detection.score < 0.3) return;
 
-      // Map class name to ingredient name (or keep as-is)
-      const mappedName = className;
-
-      // Skip if we've already detected this class recently
-      if (detectedClassesRef.current.has(mappedName)) return;
-
-      // Add to detected classes to avoid duplicates
-      detectedClassesRef.current.add(mappedName);
-
+      // Create ingredient for each detected object (including multiples of same type)
       const ingredient: Ingredient = {
-        id: `detected-${Date.now()}-${index}`,
-        name: mappedName,
+        id: `detected-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        name: className,
         confidence: detection.score,
         detected: true,
       };
 
-      newIngredients.push(ingredient);
+      currentFrameIngredients.push(ingredient);
     });
 
-    // Update ingredients state
-    if (newIngredients.length > 0) {
+    // Add new ingredients, but avoid duplicates by name (not by individual detection)
+    if (currentFrameIngredients.length > 0) {
       setDetectedIngredients((prev) => {
         const existingNames = new Set(prev.map((ing) => ing.name));
-        const uniqueNew = newIngredients.filter(
+        const uniqueNew = currentFrameIngredients.filter(
           (ing) => !existingNames.has(ing.name),
         );
-        return [...prev, ...uniqueNew];
+
+        // If we have new unique ingredients, add them
+        if (uniqueNew.length > 0) {
+          return [...prev, ...uniqueNew];
+        }
+
+        return prev;
       });
     }
   }, []);
@@ -145,12 +141,11 @@ export function useIngredientDetection() {
 
       setIsDetecting(true);
       setError(null);
-      detectedClassesRef.current.clear();
 
       // Start detection loop
       detectionIntervalRef.current = setInterval(() => {
         detectObjects(videoElement);
-      }, 2000); // Detect every 2 seconds
+      }, 1500); // Detect every 1.5 seconds for better responsiveness
 
       console.log('Started real-time ingredient detection');
     },
@@ -194,7 +189,6 @@ export function useIngredientDetection() {
     setManualIngredient('');
     setIsDetecting(false);
     setCurrentDetections([]);
-    detectedClassesRef.current.clear();
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
