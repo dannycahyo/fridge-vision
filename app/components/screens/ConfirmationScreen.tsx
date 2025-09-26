@@ -43,15 +43,27 @@ export function ConfirmationScreen({
       <CardHeader>
         <CardTitle>Confirm Your Ingredients</CardTitle>
         <CardDescription>
-          Review detected ingredients and add any that were missed
+          Remove non-food items and add any ingredients the camera
+          missed
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Helpful tip */}
+        {detectedIngredients.length > 0 && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <p className="text-sm text-amber-900 dark:text-amber-100">
+              🧹 <strong>Clean up time!</strong> Remove items that
+              aren't ingredients (like "laptop" or "person") and add
+              any food items the camera missed.
+            </p>
+          </div>
+        )}
+
         {/* Detected Ingredients List */}
         {detectedIngredients.length > 0 && (
           <div>
             <Label className="text-sm font-medium">
-              Detected Ingredients:
+              Camera Detected Items:
             </Label>
             <div className="mt-2 space-y-2">
               {detectedIngredients.map((ingredient) => (

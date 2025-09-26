@@ -26,8 +26,8 @@ export function WelcomeScreen({
           Ready to Cook?
         </CardTitle>
         <CardDescription>
-          Point your camera at your fridge and let AI create amazing
-          recipes from what you have!
+          Use your camera to detect items, then curate your ingredient
+          list for the perfect AI-generated recipe!
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -36,10 +36,16 @@ export function WelcomeScreen({
             How it works:
           </h3>
           <ol className="text-sm text-green-700 dark:text-green-400 space-y-1">
-            <li>1. Scan your ingredients with your camera</li>
-            <li>2. Confirm and add any missed items</li>
-            <li>3. Let AI generate a personalized recipe</li>
-            <li>4. Start cooking your new dish!</li>
+            <li>
+              1. Camera detects everything visible in your kitchen
+            </li>
+            <li>
+              2. Remove irrelevant items and add missing ingredients
+            </li>
+            <li>
+              3. AI generates a custom recipe using your ingredients
+            </li>
+            <li>4. Cook your personalized dish!</li>
           </ol>
         </div>
         <Button

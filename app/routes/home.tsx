@@ -20,9 +20,6 @@ import { ErrorDisplay } from '~/components/ui/ErrorDisplay';
 // Icons
 import { ChefHat } from 'lucide-react';
 
-// Types
-import type { Recipe } from '~/types';
-
 export function meta({}: Route.MetaArgs) {
   return [
     { title: 'FridgeVision AI - Smart Recipe Generator' },
@@ -34,7 +31,6 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// TODO: Implement action function for recipe generation
 export async function action({ request }: Route.ActionArgs) {
   try {
     const formData = await request.formData();
@@ -45,47 +41,49 @@ export async function action({ request }: Route.ActionArgs) {
       return { error: 'No ingredients provided.' };
     }
 
-    // TODO: Integrate with Gemini API
-    // const prompt = `You are a creative chef. Create a recipe using: ${ingredients.join(', ')}. Format your response EXACTLY as follows...`;
-    // const geminiResponse = await callGeminiAPI(prompt, process.env.GEMINI_API_KEY);
+    // Import Gemini API function
+    const { generateRecipe } = await import('~/lib/gemini');
 
-    // Mock recipe for UI demonstration
-    const mockRecipe: Recipe = {
-      dishName: 'Mediterranean Veggie Scramble',
-      ingredients: ingredients,
-      instructions: [
-        'Heat a large skillet over medium heat and add a drizzle of olive oil.',
-        'Add diced onions and cook until translucent, about 3-4 minutes.',
-        'Add tomatoes and cook until they start to soften.',
-        'Beat eggs in a bowl and pour into the skillet.',
-        'Gently scramble the eggs with the vegetables until just set.',
-        'Season with salt, pepper, and fresh herbs.',
-        'Serve immediately while hot.',
-      ],
-    };
+    // Generate recipe using Gemini API
+    const recipe = await generateRecipe(ingredients);
 
-    return { recipe: mockRecipe };
+    return { recipe };
   } catch (error) {
     console.error('Action Error:', error);
-    return { error: 'Failed to generate recipe.' };
+    return { error: 'Failed to generate recipe. Please try again.' };
   }
 }
 
 export default function Home() {
   // Custom hooks
-  const { cameraStatus, error: cameraError, requestCameraPermission, resetCamera } = useCamera();
+  const {
+    cameraStatus,
+    error: cameraError,
+    requestCameraPermission,
+    resetCamera,
+  } = useCamera();
   const {
     detectedIngredients,
     manualIngredient,
     setManualIngredient,
     isDetecting,
+    modelLoaded,
+    error: detectionError,
+    currentDetections,
     startDetection,
     stopDetection,
     removeIngredient,
     addManualIngredient,
     resetIngredients,
   } = useIngredientDetection();
-  const { currentStep, isSubmitting, recipe, apiError, goToStep, startOver } = useAppFlow();
+  const {
+    currentStep,
+    isSubmitting,
+    recipe,
+    apiError,
+    goToStep,
+    startOver,
+  } = useAppFlow();
 
   // Event handlers
   const handleStartScanning = async () => {
@@ -133,17 +131,24 @@ export default function Home() {
 
         {/* Error Displays */}
         {cameraError && <ErrorDisplay error={cameraError} />}
+        {detectionError && <ErrorDisplay error={detectionError} />}
         {apiError && <ErrorDisplay error={apiError} />}
 
         {/* Screen Components */}
         {currentStep === 'welcome' && (
-          <WelcomeScreen cameraStatus={cameraStatus} onStartScanning={handleStartScanning} />
+          <WelcomeScreen
+            cameraStatus={cameraStatus}
+            onStartScanning={handleStartScanning}
+          />
         )}
 
         {currentStep === 'camera' && cameraStatus === 'granted' && (
           <CameraScreen
             isDetecting={isDetecting}
             detectedIngredients={detectedIngredients}
+            currentDetections={currentDetections}
+            modelLoaded={modelLoaded}
+            detectionError={detectionError}
             onStartDetection={startDetection}
             onStopDetection={stopDetection}
             onConfirm={handleStopDetectionAndConfirm}
@@ -163,11 +168,17 @@ export default function Home() {
         )}
 
         {currentStep === 'generating' && (
-          <GenerationScreen detectedIngredients={detectedIngredients} isSubmitting={isSubmitting} />
+          <GenerationScreen
+            detectedIngredients={detectedIngredients}
+            isSubmitting={isSubmitting}
+          />
         )}
 
         {currentStep === 'recipe' && recipe && (
-          <RecipeScreen recipe={recipe} onStartOver={handleStartOver} />
+          <RecipeScreen
+            recipe={recipe}
+            onStartOver={handleStartOver}
+          />
         )}
       </div>
     </div>
