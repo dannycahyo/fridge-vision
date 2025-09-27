@@ -1,23 +1,18 @@
-import { Form, useNavigation, useActionData } from 'react-router';
 import type { Route } from './+types/home';
 
-// Custom Hooks
 import { useCamera } from '~/hooks/useCamera';
 import { useIngredientDetection } from '~/hooks/useIngredientDetection';
 import { useAppFlow } from '~/hooks/useAppFlow';
 
-// Screen Components
 import { WelcomeScreen } from '~/components/screens/WelcomeScreen';
 import { CameraScreen } from '~/components/screens/CameraScreen';
 import { ConfirmationScreen } from '~/components/screens/ConfirmationScreen';
 import { GenerationScreen } from '~/components/screens/GenerationScreen';
 import { RecipeScreen } from '~/components/screens/RecipeScreen';
 
-// UI Components
 import { ProgressIndicator } from '~/components/ui/ProgressIndicator';
 import { ErrorDisplay } from '~/components/ui/ErrorDisplay';
 
-// Icons
 import { ChefHat } from 'lucide-react';
 
 export function meta({}: Route.MetaArgs) {
@@ -37,23 +32,19 @@ export async function action({ request }: Route.ActionArgs) {
     const actionType = formData.get('actionType')?.toString();
 
     if (actionType === 'analyzeImage') {
-      // Handle image analysis with Google Vision API
       const imageFile = formData.get('image') as File;
 
       if (!imageFile) {
         return { error: 'No image provided for analysis.' };
       }
 
-      // Convert File to Buffer for Google Vision API
       const arrayBuffer = await imageFile.arrayBuffer();
       const imageBuffer = Buffer.from(arrayBuffer);
 
-      // Import Google Vision API function
       const { analyzeImageForIngredients } = await import(
         '~/lib/googleVision'
       );
 
-      // Analyze image for ingredients
       const result = await analyzeImageForIngredients(imageBuffer);
 
       if (result.error) {
@@ -70,10 +61,8 @@ export async function action({ request }: Route.ActionArgs) {
         return { error: 'No ingredients provided.' };
       }
 
-      // Import Gemini API function
       const { generateRecipe } = await import('~/lib/gemini');
 
-      // Generate recipe using Gemini API
       const recipe = await generateRecipe(ingredients);
 
       return { recipe };
@@ -85,7 +74,6 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export default function Home() {
-  // Custom hooks
   const {
     cameraStatus,
     error: cameraError,
@@ -113,7 +101,6 @@ export default function Home() {
     startOver,
   } = useAppFlow();
 
-  // Event handlers
   const handleStartScanning = async () => {
     const success = await requestCameraPermission();
     if (success) {
@@ -122,7 +109,6 @@ export default function Home() {
   };
 
   const handleStopDetectionAndConfirm = () => {
-    // No need to stop detection since we're using capture-based approach
     goToStep('confirming');
   };
 
@@ -141,7 +127,6 @@ export default function Home() {
   return (
     <div className="min-h-screen grid place-items-center bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-6 max-w-lg">
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-2">
             <ChefHat className="h-8 w-8 text-green-600" />
@@ -154,15 +139,12 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Progress Indicator */}
         <ProgressIndicator currentStep={currentStep} />
 
-        {/* Error Displays */}
         {cameraError && <ErrorDisplay error={cameraError} />}
         {detectionError && <ErrorDisplay error={detectionError} />}
         {apiError && <ErrorDisplay error={apiError} />}
 
-        {/* Screen Components */}
         {currentStep === 'welcome' && (
           <WelcomeScreen
             cameraStatus={cameraStatus}

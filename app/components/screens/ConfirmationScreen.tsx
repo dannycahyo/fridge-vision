@@ -48,7 +48,6 @@ export function ConfirmationScreen({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Helpful tip */}
         {detectedIngredients.length > 0 && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
             <p className="text-sm text-amber-900 dark:text-amber-100">
@@ -59,7 +58,6 @@ export function ConfirmationScreen({
           </div>
         )}
 
-        {/* Detected Ingredients List */}
         {detectedIngredients.length > 0 && (
           <div>
             <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -96,7 +94,6 @@ export function ConfirmationScreen({
 
         <Separator />
 
-        {/* Manual Ingredient Addition */}
         <div>
           <Label
             htmlFor="manual-ingredient"
@@ -123,7 +120,6 @@ export function ConfirmationScreen({
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-2 pt-4">
           <Button
             variant="outline"

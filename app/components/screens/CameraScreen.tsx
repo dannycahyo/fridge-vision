@@ -31,7 +31,6 @@ export function CameraScreen({
 }: CameraScreenProps) {
   const webcamRef = useRef<Webcam>(null);
 
-  // Set video reference when webcam is ready
   useEffect(() => {
     if (webcamRef.current?.video) {
       onSetVideoRef(webcamRef.current.video);
@@ -53,7 +52,6 @@ export function CameraScreen({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Info Box */}
         {!isAnalyzing && detectedIngredients.length === 0 && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-900 dark:text-blue-100">
@@ -65,14 +63,12 @@ export function CameraScreen({
           </div>
         )}
 
-        {/* Error display */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
             <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
 
-        {/* Camera View */}
         <div className="relative rounded-lg overflow-hidden bg-gray-100">
           <Webcam
             ref={webcamRef}
@@ -84,7 +80,6 @@ export function CameraScreen({
               facingMode: 'environment',
             }}
           />
-          {/* Analysis Overlay */}
           {isAnalyzing && (
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
               <div className="bg-white rounded-lg p-4 flex items-center gap-2">
@@ -97,7 +92,6 @@ export function CameraScreen({
           )}
         </div>
 
-        {/* Detected Ingredients */}
         {detectedIngredients.length > 0 && (
           <div className="space-y-2">
             <h3 className="text-sm font-semibold text-center text-gray-900 dark:text-gray-100">
@@ -122,7 +116,6 @@ export function CameraScreen({
           </div>
         )}
 
-        {/* Action Buttons */}
         <div className="flex gap-2">
           <Button
             onClick={onCaptureAndAnalyze}

@@ -29,7 +29,6 @@ export function RecipeScreen({
         <CardDescription>Made with your ingredients</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Ingredients Used */}
         <div>
           <h3 className="font-semibold mb-2 flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -50,7 +49,6 @@ export function RecipeScreen({
 
         <Separator />
 
-        {/* Cooking Instructions */}
         <div>
           <h3 className="font-semibold mb-3 flex items-center gap-2">
             <ChefHat className="h-4 w-4 text-green-600" />
@@ -70,7 +68,6 @@ export function RecipeScreen({
           </ol>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex gap-2 pt-4">
           <Button
             onClick={onStartOver}
