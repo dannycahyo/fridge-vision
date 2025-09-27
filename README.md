@@ -27,8 +27,7 @@ FridgeVision AI is a modern web application that helps you discover what to cook
 
 ### AI & Computer Vision
 
-- **TensorFlow.js** - Machine learning in the browser
-- **COCO-SSD Model** - Real-time object detection (80+ classes)
+- **Google Vision API** - High-accuracy ingredient detection and food recognition
 - **Google Gemini API** - Advanced AI recipe generation
 
 ### Core Libraries
@@ -49,12 +48,11 @@ app/
 │   │   ├── GenerationScreen.tsx
 │   │   └── RecipeScreen.tsx
 │   └── ui/               # Reusable UI components
-│       ├── DetectionOverlay.tsx
 │       ├── ProgressIndicator.tsx
 │       └── ErrorDisplay.tsx
 ├── hooks/                # Custom React hooks
 │   ├── useCamera.ts      # Camera management
-│   ├── useIngredientDetection.ts  # AI object detection
+│   ├── useServerVisionIngredientDetection.ts  # Secure server-side Vision API
 │   └── useAppFlow.ts     # Application state flow
 ├── lib/                  # Utilities and services
 │   ├── gemini.ts         # Google Gemini AI integration
@@ -66,11 +64,12 @@ app/
 ## 🎯 How It Works
 
 1. **Camera Access** - Request camera permissions and initialize webcam
-2. **Real-time Detection** - Use TensorFlow.js COCO-SSD model to detect objects every 1.5 seconds
-3. **Visual Feedback** - Show bounding boxes around detected ingredients
-4. **Ingredient Curation** - Allow users to confirm, remove, or add ingredients manually
-5. **Recipe Generation** - Send ingredient list to Google Gemini AI for recipe creation
-6. **Recipe Display** - Present the generated recipe with proper formatting
+2. **Image Capture** - Capture images from camera feed when user clicks "Detect Now"
+3. **Server-Side Processing** - Send images to server-side Google Vision API proxy for secure processing
+4. **Ingredient Detection** - Google Vision API analyzes images and returns detected ingredients
+5. **Ingredient Curation** - Allow users to confirm, remove, or add ingredients manually
+6. **Recipe Generation** - Send ingredient list to Google Gemini AI for recipe creation
+7. **Recipe Display** - Present the generated recipe with proper formatting
 
 ## 🛠️ Getting Started
 
@@ -105,7 +104,7 @@ app/
    Add your Google Gemini API key:
 
    ```env
-   GEMINI_API_KEY=your_gemini_api_key_here
+   VITE_GEMINI_API_KEY=your_VITE_GEMINI_API_KEY_here
    ```
 
 4. **Start development server**
@@ -128,7 +127,7 @@ npm run start
 
 ### Environment Variables
 
-- `GEMINI_API_KEY` - Your Google Gemini API key (required)
+- `VITE_GEMINI_API_KEY` - Your Google Gemini API key (required)
 
 ### Camera Permissions
 

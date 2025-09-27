@@ -1,9 +1,7 @@
-import { Form, useNavigation, useActionData } from 'react-router';
 import type { Route } from './+types/home';
 
-// Custom Hooks
 import { useCamera } from '~/hooks/useCamera';
-import { useIngredientDetection } from '~/hooks/useIngredientDetection';
+import { useServerVisionIngredientDetection } from '~/hooks/useServerVisionIngredientDetection';
 import { useAppFlow } from '~/hooks/useAppFlow';
 
 // Screen Components
@@ -34,28 +32,58 @@ export function meta({}: Route.MetaArgs) {
 export async function action({ request }: Route.ActionArgs) {
   try {
     const formData = await request.formData();
-    const ingredients =
-      formData.get('ingredients')?.toString().split(',') || [];
+    const actionType = formData.get('actionType')?.toString();
 
-    if (!ingredients || ingredients.length === 0) {
-      return { error: 'No ingredients provided.' };
+    // Handle Vision API ingredient detection
+    if (actionType === 'detect-ingredients') {
+      const imageData = formData.get('imageData')?.toString();
+
+      if (!imageData) {
+        return { error: 'No image data provided for detection.' };
+      }
+
+      const { detectIngredientsFromImage } = await import(
+        '~/lib/vision-api-server'
+      );
+
+      // Detect ingredients using Vision API
+      const detectedIngredients =
+        await detectIngredientsFromImage(imageData);
+
+      return { detectedIngredients };
     }
 
-    // Import Gemini API function
-    const { generateRecipe } = await import('~/lib/gemini');
+    // Handle recipe generation (existing functionality)
+    if (actionType === 'generate-recipe') {
+      const ingredients =
+        formData.get('ingredients')?.toString().split(',') || [];
 
-    // Generate recipe using Gemini API
-    const recipe = await generateRecipe(ingredients);
+      if (!ingredients || ingredients.length === 0) {
+        return { error: 'No ingredients provided.' };
+      }
 
-    return { recipe };
+      // Import Gemini API function
+      const { generateRecipe } = await import('~/lib/gemini');
+
+      // Generate recipe using Gemini API
+      const recipe = await generateRecipe(ingredients);
+
+      return { recipe };
+    }
+
+    return { error: 'Invalid action type.' };
   } catch (error) {
     console.error('Action Error:', error);
-    return { error: 'Failed to generate recipe. Please try again.' };
+    return {
+      error:
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred. Please try again.',
+    };
   }
 }
 
 export default function Home() {
-  // Custom hooks
   const {
     cameraStatus,
     error: cameraError,
@@ -67,15 +95,17 @@ export default function Home() {
     manualIngredient,
     setManualIngredient,
     isDetecting,
-    modelLoaded,
+    isInitialized,
+    isProcessing,
     error: detectionError,
-    currentDetections,
     startDetection,
     stopDetection,
+    triggerDetection,
     removeIngredient,
     addManualIngredient,
     resetIngredients,
-  } = useIngredientDetection();
+    canDetect,
+  } = useServerVisionIngredientDetection();
   const {
     currentStep,
     isSubmitting,
@@ -145,12 +175,14 @@ export default function Home() {
         {currentStep === 'camera' && cameraStatus === 'granted' && (
           <CameraScreen
             isDetecting={isDetecting}
+            isProcessing={isProcessing}
+            isInitialized={isInitialized}
             detectedIngredients={detectedIngredients}
-            currentDetections={currentDetections}
-            modelLoaded={modelLoaded}
             detectionError={detectionError}
+            canDetect={canDetect()}
             onStartDetection={startDetection}
             onStopDetection={stopDetection}
+            onTriggerDetection={triggerDetection}
             onConfirm={handleStopDetectionAndConfirm}
           />
         )}

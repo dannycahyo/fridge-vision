@@ -28,7 +28,7 @@ The application will be a server-rendered React app that leverages React Router'
 1.  **Client (React App):** Captures an image and runs the TensorFlow.js model to detect ingredients.
 2.  **Client (React Form):** The user confirms the ingredient list and submits it using a `<Form>` component from React Router. This sends the data to the server-side `action` associated with the route.
 3.  **Server (React Router `action`):** The `action` function, running on the server, receives the ingredient list from the form submission.
-4.  **Server -\> Gemini API:** The `action` securely accesses the `GEMINI_API_KEY` from server environment variables and calls the Gemini API.
+4.  **Server -\> Gemini API:** The `action` securely accesses the `VITE_GEMINI_API_KEY` from server environment variables and calls the Gemini API.
 5.  **Server -\> Client:** The `action` returns the generated recipe data.
 6.  **Client (React Component):** The component uses the `useActionData` hook to access the recipe and display it to the user.
 
@@ -36,15 +36,14 @@ The application will be a server-rendered React app that leverages React Router'
 
 ### 3. Technology Stack
 
-| Category                     | Technology                                    | Purpose                                               |
-| :--------------------------- | :-------------------------------------------- | :---------------------------------------------------- |
-| **Frontend Framework**       | React                                         | Core UI library for building components.              |
-| **Routing & Data Mutations** | React Router (`<Form>`, `action`, `loader`)   | Manages navigation and server-side data handling.     |
-| **Styling**                  | Tailwind CSS                                  | Utility-first CSS framework for rapid styling.        |
-| **UI Components**            | Shadcn/ui                                     | Pre-built, accessible components.                     |
-| **Camera Access**            | `react-webcam`                                | A React component to easily access the device camera. |
-| **Object Detection**         | TensorFlow.js (`@tensorflow-models/coco-ssd`) | To identify ingredients in the browser.               |
-| **Generative AI**            | Google Gemini API                             | For generating recipes from a list of ingredients.    |
+| Category                     | Technology                                  | Purpose                                               |
+| :--------------------------- | :------------------------------------------ | :---------------------------------------------------- | --- | --------------------- | ---------------------------------- | -------------------------------------------------- |
+| **Frontend Framework**       | React                                       | Core UI library for building components.              |
+| **Routing & Data Mutations** | React Router (`<Form>`, `action`, `loader`) | Manages navigation and server-side data handling.     |
+| **Styling**                  | Tailwind CSS                                | Utility-first CSS framework for rapid styling.        |
+| **UI Components**            | Shadcn/ui                                   | Pre-built, accessible components.                     |
+| **Camera Access**            | `react-webcam`                              | A React component to easily access the device camera. |
+| **Object Detection**         | Google Vision API                           | To identify ingredients with high accuracy.           | \n  | **Recipe Generation** | Google Gemini AI (`@google/genai`) | To generate recipes based on detected ingredients. |
 
 ---
 
@@ -54,7 +53,7 @@ The application will be a server-rendered React app that leverages React Router'
 
 The integration with the Gemini API will be handled securely on the server using a React Router `action` function.
 
-- **Security:** The Gemini API key will be stored as an environment variable (`GEMINI_API_KEY`) accessible **only on the server**. The client will never have access to it.
+- **Security:** The Gemini API key will be stored as an environment variable (`VITE_GEMINI_API_KEY`) accessible **only on the server**. The client will never have access to it.
 - **Client-Side Form:** The React component will use React Router's `<Form>` component to submit the ingredients. This provides progressive enhancement and a cleaner data flow than a manual `fetch` call.
 
   ```jsx
@@ -113,7 +112,7 @@ The core server-side logic will be contained within an `action` function exporte
       // Securely call the Gemini API on the server
       const geminiResponse = await callGeminiAPI(
         prompt,
-        process.env.GEMINI_API_KEY,
+        process.env.VITE_GEMINI_API_KEY,
       );
 
       // Return the recipe data to the component
