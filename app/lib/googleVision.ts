@@ -105,6 +105,10 @@ const INGREDIENT_KEYWORDS = [
   'cumin',
   'paprika',
   'cinnamon',
+  'dill',
+  'sage',
+  'chives',
+  'tarragon',
 
   // Pantry items
   'oil',
@@ -118,6 +122,23 @@ const INGREDIENT_KEYWORDS = [
   'nuts',
   'almonds',
   'walnuts',
+  'pecans',
+  'cashews',
+  'peanuts',
+  'pine nuts',
+
+  // Additional common ingredients
+  'lentils',
+  'chickpeas',
+  'kidney beans',
+  'black beans',
+  'white beans',
+  'sesame',
+  'tahini',
+  'maple syrup',
+  'vanilla',
+  'chocolate',
+  'cocoa',
 ];
 
 // Additional categories for broader ingredient detection
@@ -145,6 +166,34 @@ const FOOD_RELATED_TERMS = [
   'flavoring',
 
   // Package terms that often contain ingredients
+  'can',
+  'jar',
+  'bottle',
+  'package',
+  'box',
+  'bag',
+];
+
+// Generic terms that should NOT be added as ingredients
+const GENERIC_FOOD_TERMS = [
+  'food',
+  'ingredient',
+  'produce',
+  'fruit',
+  'vegetable',
+  'meat',
+  'seafood',
+  'dairy',
+  'grain',
+  'spice',
+  'herb',
+  'fresh',
+  'organic',
+  'natural',
+  'cooking',
+  'baking',
+  'seasoning',
+  'flavoring',
   'can',
   'jar',
   'bottle',
@@ -199,6 +248,36 @@ const EXCLUDE_TERMS = [
   'writing',
   'logo',
   'brand',
+  'packaging',
+  'wrapper',
+  'bag',
+  'box',
+  'carton',
+  'shelf',
+  'store',
+  'market',
+  'grocery',
+  'aisle',
+  'price',
+  'barcode',
+  'expiration',
+  'date',
+  'nutrition',
+  'calories',
+  'serving',
+  'net',
+  'weight',
+  'size',
+  'medium',
+  'large',
+  'small',
+  'inches',
+  'cm',
+  'lbs',
+  'oz',
+  'grams',
+  'ml',
+  'liters',
 ];
 
 function filterIngredientTexts(texts: string[]): string[] {
@@ -207,14 +286,21 @@ function filterIngredientTexts(texts: string[]): string[] {
   texts.forEach((text) => {
     const lowerText = text.toLowerCase().trim();
 
-    // Skip very short texts or numbers
-    if (lowerText.length < 2 || /^\d+$/.test(lowerText)) return;
+    // Skip very short texts, numbers, or generic food terms
+    if (
+      lowerText.length < 2 ||
+      /^\d+$/.test(lowerText) ||
+      GENERIC_FOOD_TERMS.includes(lowerText)
+    ) {
+      return;
+    }
 
     // Skip excluded terms
-    if (EXCLUDE_TERMS.some((term) => lowerText.includes(term)))
+    if (EXCLUDE_TERMS.some((term) => lowerText.includes(term))) {
       return;
+    }
 
-    // Method 1: Direct keyword matching (existing logic)
+    // Method 1: Direct keyword matching (most reliable)
     INGREDIENT_KEYWORDS.forEach((keyword) => {
       if (lowerText.includes(keyword)) {
         // If it's a plural/singular match, normalize to singular
@@ -231,43 +317,46 @@ function filterIngredientTexts(texts: string[]): string[] {
       foundIngredients.add(lowerText);
     }
 
-    // Method 3: EXPANDED - Check for food-related terms that might be ingredients
-    // This catches ingredients not in our predefined list
-    if (FOOD_RELATED_TERMS.some((term) => lowerText.includes(term))) {
-      // If it contains food-related terms, consider the whole text as potential ingredient
-      // But clean it up first
-      const cleaned = lowerText
-        .replace(/[^a-z\s]/g, '') // Remove non-letter characters except spaces
-        .replace(
-          /\b(fresh|organic|natural|raw|cooked|frozen|dried)\b/g,
-          '',
-        ) // Remove descriptors
-        .trim();
+    // Method 3: IMPROVED - Only process texts that seem like specific food items
+    // Skip if it's just a generic food category term
+    if (!GENERIC_FOOD_TERMS.includes(lowerText)) {
+      // Check if it contains food context but isn't a generic term
+      const hasBlacklistedWords = EXCLUDE_TERMS.some((term) =>
+        lowerText.includes(term),
+      );
+      const seemsLikeSpecificFood =
+        isLikelySpecificFoodItem(lowerText);
 
-      if (
-        cleaned.length > 2 &&
-        !EXCLUDE_TERMS.some((term) => cleaned.includes(term))
-      ) {
-        foundIngredients.add(cleaned);
+      if (!hasBlacklistedWords && seemsLikeSpecificFood) {
+        // Clean the text
+        const cleaned = lowerText
+          .replace(/[^a-z\s]/g, '') // Remove non-letter characters except spaces
+          .replace(
+            /\b(fresh|organic|natural|raw|cooked|frozen|dried|canned|jarred)\b/g,
+            '',
+          ) // Remove descriptors
+          .trim();
+
+        if (
+          cleaned.length > 2 &&
+          !GENERIC_FOOD_TERMS.includes(cleaned)
+        ) {
+          foundIngredients.add(cleaned);
+        }
       }
-    }
-
-    // Method 4: INTELLIGENT - For object labels from Google Vision that sound like food
-    // Check if it's a reasonable food word (simple heuristic)
-    if (isLikelyFoodItem(lowerText)) {
-      foundIngredients.add(lowerText);
     }
   });
 
   return Array.from(foundIngredients);
 }
 
-// Simple heuristic to identify likely food items
-function isLikelyFoodItem(text: string): boolean {
+// Improved heuristic to identify likely specific food items (not generic categories)
+function isLikelySpecificFoodItem(text: string): boolean {
   // Skip if it's too short or contains excluded terms
   if (
     text.length < 3 ||
-    EXCLUDE_TERMS.some((term) => text.includes(term))
+    EXCLUDE_TERMS.some((term) => text.includes(term)) ||
+    GENERIC_FOOD_TERMS.includes(text)
   ) {
     return false;
   }
@@ -284,9 +373,33 @@ function isLikelyFoodItem(text: string): boolean {
     /meat$/, // ground meat, etc.
     /fish$/, // tuna fish, etc.
     /pepper$/, // bell pepper, black pepper, etc.
+    /bread$/, // whole bread, white bread, etc.
+    /rice$/, // brown rice, white rice, etc.
+    /soup$/, // chicken soup, vegetable soup, etc.
   ];
 
-  return foodPatterns.some((pattern) => pattern.test(text));
+  // Check if it matches specific food patterns
+  const matchesPattern = foodPatterns.some((pattern) =>
+    pattern.test(text),
+  );
+
+  // Additional check: if it's a compound word that might be a specific food
+  const isCompoundFood =
+    text.includes(' ') &&
+    text.split(' ').length === 2 &&
+    !text
+      .split(' ')
+      .some((word) => GENERIC_FOOD_TERMS.includes(word));
+
+  // Check if it's a known specific ingredient that might not be in our keywords
+  const seemsSpecific = !GENERIC_FOOD_TERMS.some(
+    (generic) =>
+      text === generic ||
+      text.startsWith(generic + ' ') ||
+      text.endsWith(' ' + generic),
+  );
+
+  return matchesPattern || (isCompoundFood && seemsSpecific);
 }
 
 export async function analyzeImageForIngredients(
@@ -325,19 +438,27 @@ export async function analyzeImageForIngredients(
       .map((annotation) => annotation.description || '')
       .filter((text) => text.length > 1); // Filter out single characters
 
-    // Extract label annotations (objects)
+    // Extract label annotations (objects) with their confidence scores
     const labelAnnotations = labelResult.labelAnnotations || [];
-    const detectedLabels = labelAnnotations
-      .filter((label) => (label.score || 0) > 0.7) // Higher confidence threshold
-      .map((label) => label.description?.toLowerCase() || '')
-      .filter((label) => label.length > 0);
+    const detectedLabelsWithConfidence = labelAnnotations
+      .filter((label) => (label.score || 0) > 0.6) // Lowered threshold to catch more ingredients
+      .map((label) => ({
+        text: label.description?.toLowerCase() || '',
+        confidence: label.score || 0.6,
+      }))
+      .filter((label) => label.text.length > 0);
 
     // Combine text and label detections
-    const allDetections = [...detectedTexts, ...detectedLabels];
+    const allDetections = [
+      ...detectedTexts,
+      ...detectedLabelsWithConfidence.map((label) => label.text),
+    ];
 
     console.log('🔍 Google Vision API raw detections:', {
       textDetections: detectedTexts.slice(0, 10), // First 10 text items
-      labelDetections: detectedLabels,
+      labelDetections: detectedLabelsWithConfidence.map(
+        (l) => `${l.text} (${Math.round(l.confidence * 100)}%)`,
+      ),
       totalDetections: allDetections.length,
     });
 
@@ -346,15 +467,33 @@ export async function analyzeImageForIngredients(
 
     console.log('🥕 Filtered ingredients found:', ingredientTexts);
 
-    // Convert to Ingredient objects
-    const ingredients: Ingredient[] = ingredientTexts.map(
-      (name, index) => ({
-        id: `vision-${Date.now()}-${index}`,
-        name: name.toLowerCase(),
-        confidence: 0.8, // Google Vision API doesn't provide confidence for our filtered results
-        detected: true,
-      }),
-    );
+    // Convert to Ingredient objects with deduplication and better confidence
+    const ingredientMap = new Map<string, Ingredient>();
+
+    ingredientTexts.forEach((name, index) => {
+      const normalizedName = name.toLowerCase().trim();
+
+      // Skip if we already have this ingredient (deduplication)
+      if (!ingredientMap.has(normalizedName)) {
+        // Check if this ingredient came from a label detection (has confidence)
+        const labelMatch = detectedLabelsWithConfidence.find(
+          (label) =>
+            label.text === normalizedName ||
+            normalizedName.includes(label.text),
+        );
+
+        const confidence = labelMatch ? labelMatch.confidence : 0.7; // Use actual confidence or default
+
+        ingredientMap.set(normalizedName, {
+          id: `vision-${Date.now()}-${index}`,
+          name: normalizedName,
+          confidence: confidence,
+          detected: true,
+        });
+      }
+    });
+
+    const ingredients = Array.from(ingredientMap.values());
 
     console.log(
       '✅ Final ingredients returned:',
