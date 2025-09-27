@@ -1,53 +1,185 @@
-# Welcome to React Router!
+# 🍽️ FridgeVision AI
 
-A modern, production-ready template for building full-stack React applications using React Router.
+**Transform your fridge contents into delicious recipes with the power of AI and computer vision.**
 
-## Features
+FridgeVision AI is a modern web application that helps you discover what to cook by intelligently detecting ingredients through your camera and generating personalized recipes using Google's Gemini AI.
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+![FridgeVision AI](https://img.shields.io/badge/React-Router-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue) ![TensorFlow.js](https://img.shields.io/badge/TensorFlow.js-AI-orange) ![Gemini](https://img.shields.io/badge/Google-Gemini-green)
 
-## Getting Started
+## ✨ Features
+
+- 📸 **Real-time Ingredient Detection** - Point your camera at ingredients and watch AI identify them instantly
+- 🤖 **AI-Powered Recipe Generation** - Get personalized recipes using Google Gemini AI
+- 🎯 **Multiple Object Detection** - Detect multiple ingredients simultaneously with visual bounding boxes
+- 📱 **Mobile-First Design** - Optimized for mobile devices with responsive UI
+- ⚡ **Real-time Processing** - Live camera feed with instant object recognition
+- 🎨 **Modern UI/UX** - Built with shadcn/ui components and Tailwind CSS
+- 🔧 **Manual Ingredient Management** - Add or remove ingredients from the detected list
+
+## 🚀 Tech Stack
+
+### Frontend & Framework
+
+- **React Router v7** - Latest routing with server-side rendering
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first CSS framework
+- **shadcn/ui** - Modern UI component library
+
+### AI & Computer Vision
+
+- **TensorFlow.js** - Machine learning in the browser
+- **COCO-SSD Model** - Real-time object detection (80+ classes)
+- **Google Gemini API** - Advanced AI recipe generation
+
+### Core Libraries
+
+- **React Webcam** - Camera access and video streaming
+- **Lucide React** - Beautiful icons
+- **React Markdown** - Recipe formatting
+
+## 🏗️ Architecture
+
+```
+app/
+├── components/
+│   ├── screens/           # Main application screens
+│   │   ├── WelcomeScreen.tsx
+│   │   ├── CameraScreen.tsx
+│   │   ├── ConfirmationScreen.tsx
+│   │   ├── GenerationScreen.tsx
+│   │   └── RecipeScreen.tsx
+│   └── ui/               # Reusable UI components
+│       ├── DetectionOverlay.tsx
+│       ├── ProgressIndicator.tsx
+│       └── ErrorDisplay.tsx
+├── hooks/                # Custom React hooks
+│   ├── useCamera.ts      # Camera management
+│   ├── useIngredientDetection.ts  # AI object detection
+│   └── useAppFlow.ts     # Application state flow
+├── lib/                  # Utilities and services
+│   ├── gemini.ts         # Google Gemini AI integration
+│   └── utils.ts          # Helper functions
+└── types/                # TypeScript type definitions
+    └── index.ts
+```
+
+## 🎯 How It Works
+
+1. **Camera Access** - Request camera permissions and initialize webcam
+2. **Real-time Detection** - Use TensorFlow.js COCO-SSD model to detect objects every 1.5 seconds
+3. **Visual Feedback** - Show bounding boxes around detected ingredients
+4. **Ingredient Curation** - Allow users to confirm, remove, or add ingredients manually
+5. **Recipe Generation** - Send ingredient list to Google Gemini AI for recipe creation
+6. **Recipe Display** - Present the generated recipe with proper formatting
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+- A modern web browser with camera support
+- Google Gemini API key
 
 ### Installation
 
-Install the dependencies:
+1. **Clone the repository**
 
-```bash
-npm install
-```
+   ```bash
+   git clone https://github.com/dannycahyo/fridge-vision.git
+   cd fridge-vision
+   ```
 
-### Development
+2. **Install dependencies**
 
-Start the development server with HMR:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm run dev
-```
+3. **Set up environment variables**
 
-Your application will be available at `http://localhost:3000`.
+   ```bash
+   cp .env.example .env
+   ```
 
-## Building for Production
+   Add your Google Gemini API key:
 
-Create a production build:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+4. **Start development server**
+
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   Navigate to `http://localhost:5173`
+
+### Building for Production
 
 ```bash
 npm run build
+npm run start
 ```
 
-## Deployment
+## 🔧 Configuration
 
-[![Deploy to Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremix-run%2Freact-router-templates%2Ftree%2Fmain%2Fvercel&project-name=my-react-router-app&repository-name=my-react-router-app)
+### Environment Variables
 
-## Styling
+- `GEMINI_API_KEY` - Your Google Gemini API key (required)
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+### Camera Permissions
+
+The app requires camera access to function. Ensure you grant camera permissions when prompted.
+
+## 📱 Usage
+
+1. **Launch the app** - Open FridgeVision in your browser
+2. **Grant camera access** - Allow camera permissions when prompted
+3. **Scan ingredients** - Point your camera at ingredients in your fridge or pantry
+4. **Review detections** - See detected ingredients with confidence scores
+5. **Customize list** - Remove incorrect items or add missing ingredients manually
+6. **Generate recipe** - Tap "Generate Recipe" to create an AI-powered recipe
+7. **Cook and enjoy** - Follow the step-by-step instructions
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📋 Roadmap
+
+- [ ] **Dietary Preferences** - Add vegetarian, gluten-free, and other dietary filters
+- [ ] **Recipe History** - Save and access previously generated recipes
+- [ ] **Recipe Variations** - Generate variations of existing recipes
+- [ ] **Shopping List** - Generate shopping lists for missing ingredients
+- [ ] **Offline Mode** - Basic functionality without internet connection
+- [ ] **Recipe Sharing** - Share recipes with friends and family
+
+## 🐛 Known Issues
+
+- Camera access may not work on older browsers
+- Detection accuracy depends on lighting conditions
+- Some small or partially occluded objects may not be detected
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Google Gemini AI** for powerful recipe generation
+- **TensorFlow.js** team for browser-based machine learning
+- **shadcn/ui** for beautiful React components
+- **React Router** team for the modern routing solution
 
 ---
 
-Built with ❤️ using React Router.
+**Built with ❤️ by [dannycahyo](https://github.com/dannycahyo)**
+
+_Turn your ingredients into inspiration with FridgeVision AI!_ ✨
