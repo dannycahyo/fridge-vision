@@ -23,6 +23,7 @@ export function useIngredientDetection() {
 
   const modelRef = useRef<cocoSsd.ObjectDetection | null>(null);
   const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const detectedClassesRef = useRef<Set<string>>(new Set());
 
   // Load TensorFlow.js model on component mount
   useEffect(() => {
@@ -57,40 +58,42 @@ export function useIngredientDetection() {
 
   // Convert detection results to ingredients
   const processDetections = useCallback((detections: Detection[]) => {
-    // Process all detections in the current frame
-    const currentFrameIngredients: Ingredient[] = [];
+    const newIngredients: Ingredient[] = [];
 
+    // Process detections one at a time for better accuracy
     detections.forEach((detection, index) => {
       const className = detection.class.toLowerCase();
 
-      // Lower confidence threshold - let users decide what's relevant
-      if (detection.score < 0.3) return;
+      // Higher confidence threshold for better accuracy
+      if (detection.score < 0.5) return;
 
-      // Create ingredient for each detected object (including multiples of same type)
+      // Skip if we've already detected this class to avoid duplicates
+      if (detectedClassesRef.current.has(className)) return;
+
+      // Add to detected classes to track what we've found
+      detectedClassesRef.current.add(className);
+
       const ingredient: Ingredient = {
-        id: `detected-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `detected-${Date.now()}-${index}`,
         name: className,
         confidence: detection.score,
         detected: true,
       };
 
-      currentFrameIngredients.push(ingredient);
+      newIngredients.push(ingredient);
+      console.log(
+        `New ingredient detected: ${className} (${Math.round(detection.score * 100)}% confidence)`,
+      );
     });
 
-    // Add new ingredients, but avoid duplicates by name (not by individual detection)
-    if (currentFrameIngredients.length > 0) {
+    // Update ingredients state
+    if (newIngredients.length > 0) {
       setDetectedIngredients((prev) => {
         const existingNames = new Set(prev.map((ing) => ing.name));
-        const uniqueNew = currentFrameIngredients.filter(
+        const uniqueNew = newIngredients.filter(
           (ing) => !existingNames.has(ing.name),
         );
-
-        // If we have new unique ingredients, add them
-        if (uniqueNew.length > 0) {
-          return [...prev, ...uniqueNew];
-        }
-
-        return prev;
+        return [...prev, ...uniqueNew];
       });
     }
   }, []);
@@ -104,16 +107,20 @@ export function useIngredientDetection() {
         const predictions =
           await modelRef.current.detect(videoElement);
 
-        // Accept ALL detections - let users curate the list themselves
-        const allDetections = predictions.filter(
-          (pred) => pred.score > 0.3, // Lower threshold for broader detection
+        // Filter for higher confidence detections for better accuracy
+        const highConfidenceDetections = predictions.filter(
+          (pred) => pred.score > 0.5, // Higher threshold for more reliable detection
         );
 
-        // Update current detections for overlay
+        // Update current detections for overlay (show all detections for visual feedback)
+        const allDetections = predictions.filter(
+          (pred) => pred.score > 0.3,
+        );
         setCurrentDetections(allDetections as Detection[]);
 
-        if (allDetections.length > 0) {
-          processDetections(allDetections as Detection[]);
+        // Process only high confidence detections for ingredient list
+        if (highConfidenceDetections.length > 0) {
+          processDetections(highConfidenceDetections as Detection[]);
         }
       } catch (err) {
         console.error('Detection error:', err);
@@ -141,13 +148,16 @@ export function useIngredientDetection() {
 
       setIsDetecting(true);
       setError(null);
+      detectedClassesRef.current.clear(); // Reset detected classes for new session
 
-      // Start detection loop
+      // Start detection loop with optimized timing for better UX
       detectionIntervalRef.current = setInterval(() => {
         detectObjects(videoElement);
-      }, 1500); // Detect every 1.5 seconds for better responsiveness
+      }, 2000); // Detect every 2 seconds for stable detection
 
-      console.log('Started real-time ingredient detection');
+      console.log(
+        'Started reliable ingredient detection (one at a time)',
+      );
     },
     [modelLoaded, detectObjects],
   );
@@ -189,10 +199,20 @@ export function useIngredientDetection() {
     setManualIngredient('');
     setIsDetecting(false);
     setCurrentDetections([]);
+    detectedClassesRef.current.clear(); // Clear detected classes
     if (detectionIntervalRef.current) {
       clearInterval(detectionIntervalRef.current);
       detectionIntervalRef.current = null;
     }
+  }, []);
+
+  // Reset detection session (allow re-detecting same ingredients)
+  const resetDetectionSession = useCallback(() => {
+    detectedClassesRef.current.clear();
+    setCurrentDetections([]);
+    console.log(
+      'Detection session reset - can now re-detect same ingredients',
+    );
   }, []);
 
   return {
@@ -208,5 +228,6 @@ export function useIngredientDetection() {
     removeIngredient,
     addManualIngredient,
     resetIngredients,
+    resetDetectionSession,
   };
 }
