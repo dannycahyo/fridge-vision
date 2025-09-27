@@ -64,12 +64,14 @@ export function CameraScreen({
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+            <p className="text-sm text-red-800 dark:text-red-200">
+              {error}
+            </p>
           </div>
         )}
 
-        <div className="relative rounded-lg overflow-hidden bg-gray-100">
+        <div className="relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
           <Webcam
             ref={webcamRef}
             screenshotFormat="image/jpeg"
@@ -82,9 +84,9 @@ export function CameraScreen({
           />
           {isAnalyzing && (
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-              <div className="bg-white rounded-lg p-4 flex items-center gap-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center gap-2 border dark:border-gray-600">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   Analyzing ingredients...
                 </p>
               </div>
@@ -106,7 +108,7 @@ export function CameraScreen({
                 >
                   {ingredient.name}
                   {ingredient.confidence && (
-                    <span className="ml-1 text-green-600 font-medium">
+                    <span className="ml-1 text-green-600 dark:text-green-400 font-medium">
                       {Math.round(ingredient.confidence * 100)}%
                     </span>
                   )}

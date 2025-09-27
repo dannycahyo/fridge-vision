@@ -12,6 +12,7 @@ import { RecipeScreen } from '~/components/screens/RecipeScreen';
 
 import { ProgressIndicator } from '~/components/ui/ProgressIndicator';
 import { ErrorDisplay } from '~/components/ui/ErrorDisplay';
+import { ThemeToggle } from '~/components/ui/theme-toggle';
 
 import { ChefHat } from 'lucide-react';
 
@@ -127,16 +128,22 @@ export default function Home() {
   return (
     <div className="min-h-screen grid place-items-center bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-6 max-w-lg">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <ChefHat className="h-8 w-8 text-green-600" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              FridgeVision AI
-            </h1>
+        {/* Header with Theme Toggle */}
+        <div className="flex justify-between items-start mb-6">
+          <div className="text-center flex-1">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <ChefHat className="h-8 w-8 text-green-600" />
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                FridgeVision AI
+              </h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-300 text-sm">
+              Turn your fridge into culinary inspiration
+            </p>
           </div>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">
-            Turn your fridge into culinary inspiration
-          </p>
+          <div className="ml-4">
+            <ThemeToggle />
+          </div>
         </div>
 
         <ProgressIndicator currentStep={currentStep} />

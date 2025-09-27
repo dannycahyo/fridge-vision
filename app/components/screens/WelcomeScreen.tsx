@@ -26,8 +26,10 @@ export function WelcomeScreen({
           Ready to Cook?
         </CardTitle>
         <CardDescription>
-          Use your camera to detect items, then curate your ingredient
-          list for the perfect AI-generated recipe!
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Use your camera to detect items, then curate your
+            ingredient list for the perfect AI-generated recipe!
+          </p>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -35,17 +37,17 @@ export function WelcomeScreen({
           <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
             How it works:
           </h3>
-          <ol className="text-sm text-green-700 dark:text-green-400 space-y-1 list-decimal list-inside">
-            <li className="font-medium">
+          <ol className="space-y-1 list-decimal list-inside">
+            <li className="font-medium text-sm text-green-700 dark:text-green-400">
               Camera detects everything visible in your kitchen
             </li>
-            <li className="font-medium">
+            <li className="font-medium text-sm text-green-700 dark:text-green-400">
               Remove irrelevant items and add missing ingredients
             </li>
-            <li className="font-medium">
+            <li className="font-medium text-sm text-green-700 dark:text-green-400">
               AI generates a custom recipe using your ingredients
             </li>
-            <li className="font-medium">
+            <li className="font-medium text-sm text-green-700 dark:text-green-400">
               Cook your personalized dish!
             </li>
           </ol>
