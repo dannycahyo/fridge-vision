@@ -62,9 +62,9 @@ export function RecipeScreen({
                 <span className="flex-shrink-0 w-6 h-6 bg-green-100 text-green-800 rounded-full flex items-center justify-center text-sm font-medium">
                   {index + 1}
                 </span>
-                <span className="text-gray-700 dark:text-gray-300">
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                   {instruction}
-                </span>
+                </p>
               </li>
             ))}
           </ol>

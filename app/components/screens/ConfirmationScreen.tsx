@@ -62,7 +62,7 @@ export function ConfirmationScreen({
         {/* Detected Ingredients List */}
         {detectedIngredients.length > 0 && (
           <div>
-            <Label className="text-sm font-medium">
+            <Label className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Camera Detected Items:
             </Label>
             <div className="mt-2 space-y-2">
@@ -72,9 +72,9 @@ export function ConfirmationScreen({
                   className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="capitalize">
+                    <p className="capitalize font-medium text-gray-900 dark:text-gray-100">
                       {ingredient.name}
-                    </span>
+                    </p>
                     {ingredient.detected && (
                       <Badge variant="secondary" className="text-xs">
                         AI Detected
@@ -100,7 +100,7 @@ export function ConfirmationScreen({
         <div>
           <Label
             htmlFor="manual-ingredient"
-            className="text-sm font-medium"
+            className="text-sm font-semibold text-gray-900 dark:text-gray-100"
           >
             Add Ingredients Manually:
           </Label>

@@ -35,17 +35,19 @@ export function WelcomeScreen({
           <h3 className="font-semibold text-green-800 dark:text-green-300 mb-2">
             How it works:
           </h3>
-          <ol className="text-sm text-green-700 dark:text-green-400 space-y-1">
-            <li>
-              1. Camera detects everything visible in your kitchen
+          <ol className="text-sm text-green-700 dark:text-green-400 space-y-1 list-decimal list-inside">
+            <li className="font-medium">
+              Camera detects everything visible in your kitchen
             </li>
-            <li>
-              2. Remove irrelevant items and add missing ingredients
+            <li className="font-medium">
+              Remove irrelevant items and add missing ingredients
             </li>
-            <li>
-              3. AI generates a custom recipe using your ingredients
+            <li className="font-medium">
+              AI generates a custom recipe using your ingredients
             </li>
-            <li>4. Cook your personalized dish!</li>
+            <li className="font-medium">
+              Cook your personalized dish!
+            </li>
           </ol>
         </div>
         <Button

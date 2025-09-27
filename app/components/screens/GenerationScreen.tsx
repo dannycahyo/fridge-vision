@@ -46,9 +46,9 @@ export function GenerationScreen({
 
         {isSubmitting && (
           <div className="mt-6 space-y-3">
-            <div className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm font-medium text-gray-700 dark:text-gray-300">
               Our AI chef is creating something delicious...
-            </div>
+            </p>
             <div className="space-y-2">
               <Skeleton className="h-4 w-3/4 mx-auto" />
               <Skeleton className="h-4 w-1/2 mx-auto" />

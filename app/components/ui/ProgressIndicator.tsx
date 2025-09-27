@@ -28,11 +28,11 @@ export function ProgressIndicator({
   return (
     <div className="mb-6">
       <Progress value={getProgressValue()} className="h-2" />
-      <div className="flex justify-between text-xs text-gray-500 mt-1">
-        <span>Scan</span>
-        <span>Confirm</span>
-        <span>Generate</span>
-        <span>Enjoy</span>
+      <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
+        <p className="font-medium">Scan</p>
+        <p className="font-medium">Confirm</p>
+        <p className="font-medium">Generate</p>
+        <p className="font-medium">Enjoy</p>
       </div>
     </div>
   );

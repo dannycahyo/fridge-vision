@@ -89,9 +89,9 @@ export function CameraScreen({
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
               <div className="bg-white rounded-lg p-4 flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm font-medium">
+                <p className="text-sm font-medium text-gray-900">
                   Analyzing ingredients...
-                </span>
+                </p>
               </div>
             </div>
           )}
@@ -100,7 +100,7 @@ export function CameraScreen({
         {/* Detected Ingredients */}
         {detectedIngredients.length > 0 && (
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-center">
+            <h3 className="text-sm font-semibold text-center text-gray-900 dark:text-gray-100">
               Detected Ingredients:
             </h3>
             <div className="flex flex-wrap gap-1 justify-center">
@@ -112,7 +112,7 @@ export function CameraScreen({
                 >
                   {ingredient.name}
                   {ingredient.confidence && (
-                    <span className="ml-1 text-green-600">
+                    <span className="ml-1 text-green-600 font-medium">
                       {Math.round(ingredient.confidence * 100)}%
                     </span>
                   )}

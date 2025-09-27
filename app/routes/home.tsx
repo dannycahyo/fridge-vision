@@ -149,7 +149,7 @@ export default function Home() {
               FridgeVision AI
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-600 dark:text-gray-300 text-sm">
             Turn your fridge into culinary inspiration
           </p>
         </div>
