@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import Webcam from 'react-webcam';
 import { Button } from '~/components/ui/button';
 import {
@@ -9,74 +9,66 @@ import {
   CardTitle,
 } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
-import { DetectionOverlay } from '~/components/ui/DetectionOverlay';
-import { Camera, CheckCircle, Loader2 } from 'lucide-react';
+import { Camera, CheckCircle, Loader2, Scan } from 'lucide-react';
 import type { Ingredient } from '~/types';
 
 interface CameraScreenProps {
-  isDetecting: boolean;
+  isAnalyzing: boolean;
   detectedIngredients: Ingredient[];
-  currentDetections: Array<{
-    bbox: number[];
-    class: string;
-    score: number;
-  }>;
-  modelLoaded: boolean;
-  detectionError?: string | null;
-  onStartDetection: (videoElement?: HTMLVideoElement) => void;
-  onStopDetection: () => void;
+  error?: string | null;
+  onCaptureAndAnalyze: () => void;
   onConfirm: () => void;
+  onSetVideoRef: (video: HTMLVideoElement | null) => void;
 }
 
 export function CameraScreen({
-  isDetecting,
+  isAnalyzing,
   detectedIngredients,
-  currentDetections,
-  modelLoaded,
-  detectionError,
-  onStartDetection,
-  onStopDetection,
+  error,
+  onCaptureAndAnalyze,
   onConfirm,
+  onSetVideoRef,
 }: CameraScreenProps) {
   const webcamRef = useRef<Webcam>(null);
 
-  const handleStartDetection = () => {
-    const videoElement = webcamRef.current?.video;
-    onStartDetection(videoElement || undefined);
-  };
+  // Set video reference when webcam is ready
+  useEffect(() => {
+    if (webcamRef.current?.video) {
+      onSetVideoRef(webcamRef.current.video);
+    }
+    return () => onSetVideoRef(null);
+  }, [onSetVideoRef]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-center gap-2">
           <Camera className="h-5 w-5" />
-          Scan Your Ingredients
+          Capture Your Ingredients
         </CardTitle>
         <CardDescription className="text-center">
-          {!modelLoaded
-            ? 'Loading AI model...'
-            : isDetecting
-              ? 'Detecting everything visible...'
-              : 'Point your camera at anything - food, containers, kitchen items'}
+          {isAnalyzing
+            ? 'Analyzing image for ingredients...'
+            : 'Point your camera at your ingredients and take a photo to analyze'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Info Box */}
-        {!isDetecting && detectedIngredients.length === 0 && (
+        {!isAnalyzing && detectedIngredients.length === 0 && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              💡 <strong>Tip:</strong> The camera will detect
-              everything visible - fruits, vegetables, containers,
-              utensils, and more. You'll curate the final ingredient
-              list in the next step!
+              � <strong>Tip:</strong> Take a clear photo of your
+              ingredients. The AI will analyze the image and detect
+              food items, labels, and text to identify what
+              ingredients you have available.
             </p>
           </div>
         )}
 
         {/* Error display */}
-        {detectionError && (
+        {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-800">{detectionError}</p>
+            <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
 
@@ -92,31 +84,25 @@ export function CameraScreen({
               facingMode: 'environment',
             }}
           />
-          {/* Detection Overlay */}
-          <DetectionOverlay
-            detections={currentDetections}
-            videoWidth={720}
-            videoHeight={480}
-            isVisible={isDetecting && modelLoaded}
-          />
-          {/* Loading Overlay */}
-          {(isDetecting || !modelLoaded) && (
+          {/* Analysis Overlay */}
+          {isAnalyzing && (
             <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
               <div className="bg-white rounded-lg p-4 flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm font-medium">
-                  {!modelLoaded
-                    ? 'Loading AI model...'
-                    : 'Detecting everything in view...'}
+                  Analyzing ingredients...
                 </span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Detection Status */}
-        <div className="text-center space-y-2">
-          {detectedIngredients.length > 0 && (
+        {/* Detected Ingredients */}
+        {detectedIngredients.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-center">
+              Detected Ingredients:
+            </h3>
             <div className="flex flex-wrap gap-1 justify-center">
               {detectedIngredients.map((ingredient) => (
                 <Badge
@@ -133,44 +119,40 @@ export function CameraScreen({
                 </Badge>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          {!isDetecting && detectedIngredients.length === 0 && (
+          <Button
+            onClick={onCaptureAndAnalyze}
+            className="flex-1"
+            disabled={isAnalyzing}
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Scan className="mr-2 h-4 w-4" />
+                {detectedIngredients.length > 0
+                  ? 'Capture More'
+                  : 'Capture & Analyze'}
+              </>
+            )}
+          </Button>
+
+          {detectedIngredients.length > 0 && !isAnalyzing && (
             <Button
-              onClick={handleStartDetection}
+              onClick={onConfirm}
+              variant="default"
               className="flex-1"
-              disabled={!modelLoaded}
             >
               <CheckCircle className="mr-2 h-4 w-4" />
-              Start Detection
+              Confirm ({detectedIngredients.length})
             </Button>
-          )}
-          {isDetecting && (
-            <Button
-              onClick={onStopDetection}
-              variant="outline"
-              className="flex-1"
-            >
-              Stop Detection
-            </Button>
-          )}
-          {detectedIngredients.length > 0 && !isDetecting && (
-            <>
-              <Button
-                onClick={handleStartDetection}
-                variant="outline"
-                className="flex-1"
-                disabled={!modelLoaded}
-              >
-                Scan More
-              </Button>
-              <Button onClick={onConfirm} className="flex-1">
-                Confirm ({detectedIngredients.length})
-              </Button>
-            </>
           )}
         </div>
       </CardContent>

@@ -1,144 +1,60 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import * as tf from '@tensorflow/tfjs';
-import * as cocoSsd from '@tensorflow-models/coco-ssd';
+import { useFetcher } from 'react-router';
 import type { Ingredient } from '~/types';
-
-interface Detection {
-  bbox: number[];
-  class: string;
-  score: number;
-}
 
 export function useIngredientDetection() {
   const [detectedIngredients, setDetectedIngredients] = useState<
     Ingredient[]
   >([]);
   const [manualIngredient, setManualIngredient] = useState('');
-  const [isDetecting, setIsDetecting] = useState(false);
-  const [modelLoaded, setModelLoaded] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentDetections, setCurrentDetections] = useState<
-    Detection[]
-  >([]);
 
-  const modelRef = useRef<cocoSsd.ObjectDetection | null>(null);
-  const detectionIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const detectedClassesRef = useRef<Set<string>>(new Set());
+  const fetcher = useFetcher<{
+    detectedIngredients?: Ingredient[];
+    error?: string;
+  }>();
 
-  // Load TensorFlow.js model on component mount
-  useEffect(() => {
-    const loadModel = async () => {
-      try {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Handle the fetcher response
+  const handleFetcherData = useCallback(() => {
+    if (fetcher.data) {
+      setIsAnalyzing(false);
+
+      if (fetcher.data.error) {
+        setError(fetcher.data.error);
+      } else if (fetcher.data.detectedIngredients) {
+        // Add new detected ingredients to the existing list
+        setDetectedIngredients((prev) => {
+          const existingNames = new Set(prev.map((ing) => ing.name));
+          const uniqueNew =
+            fetcher.data?.detectedIngredients?.filter(
+              (ing) => !existingNames.has(ing.name),
+            ) || [];
+
+          if (uniqueNew.length > 0) {
+            console.log(
+              `Added ${uniqueNew.length} new ingredients:`,
+              uniqueNew.map((i) => i.name),
+            );
+          }
+
+          return [...prev, ...uniqueNew];
+        });
         setError(null);
-        // Initialize TensorFlow.js backend
-        await tf.ready();
-
-        // Load COCO-SSD model
-        const model = await cocoSsd.load();
-        modelRef.current = model;
-        setModelLoaded(true);
-        console.log('TensorFlow.js model loaded successfully');
-      } catch (err) {
-        console.error('Failed to load TensorFlow.js model:', err);
-        setError(
-          'Failed to load AI model. Please refresh the page and try again.',
-        );
       }
-    };
-
-    loadModel();
-
-    // Cleanup on unmount
-    return () => {
-      if (detectionIntervalRef.current) {
-        clearInterval(detectionIntervalRef.current);
-      }
-    };
-  }, []);
-
-  // Convert detection results to ingredients
-  const processDetections = useCallback((detections: Detection[]) => {
-    const newIngredients: Ingredient[] = [];
-
-    // Process detections one at a time for better accuracy
-    detections.forEach((detection, index) => {
-      const className = detection.class.toLowerCase();
-
-      // Higher confidence threshold for better accuracy
-      if (detection.score < 0.5) return;
-
-      // Skip if we've already detected this class to avoid duplicates
-      if (detectedClassesRef.current.has(className)) return;
-
-      // Add to detected classes to track what we've found
-      detectedClassesRef.current.add(className);
-
-      const ingredient: Ingredient = {
-        id: `detected-${Date.now()}-${index}`,
-        name: className,
-        confidence: detection.score,
-        detected: true,
-      };
-
-      newIngredients.push(ingredient);
-      console.log(
-        `New ingredient detected: ${className} (${Math.round(detection.score * 100)}% confidence)`,
-      );
-    });
-
-    // Update ingredients state
-    if (newIngredients.length > 0) {
-      setDetectedIngredients((prev) => {
-        const existingNames = new Set(prev.map((ing) => ing.name));
-        const uniqueNew = newIngredients.filter(
-          (ing) => !existingNames.has(ing.name),
-        );
-        return [...prev, ...uniqueNew];
-      });
     }
-  }, []);
+  }, [fetcher.data]);
 
-  // Perform detection on webcam frame
-  const detectObjects = useCallback(
-    async (videoElement: HTMLVideoElement) => {
-      if (!modelRef.current || !videoElement) return;
+  // Call handleFetcherData whenever fetcher.data changes
+  useEffect(() => {
+    handleFetcherData();
+  }, [handleFetcherData]);
 
-      try {
-        const predictions =
-          await modelRef.current.detect(videoElement);
-
-        // Filter for higher confidence detections for better accuracy
-        const highConfidenceDetections = predictions.filter(
-          (pred) => pred.score > 0.5, // Higher threshold for more reliable detection
-        );
-
-        // Update current detections for overlay (show all detections for visual feedback)
-        const allDetections = predictions.filter(
-          (pred) => pred.score > 0.3,
-        );
-        setCurrentDetections(allDetections as Detection[]);
-
-        // Process only high confidence detections for ingredient list
-        if (highConfidenceDetections.length > 0) {
-          processDetections(highConfidenceDetections as Detection[]);
-        }
-      } catch (err) {
-        console.error('Detection error:', err);
-      }
-    },
-    [processDetections],
-  );
-
-  // Start detection with webcam
-  const startDetection = useCallback(
-    (videoElement?: HTMLVideoElement) => {
-      if (!modelLoaded || !modelRef.current) {
-        setError(
-          'AI model is not loaded yet. Please wait a moment and try again.',
-        );
-        return;
-      }
-
+  // Capture image from video and send for analysis
+  const captureAndAnalyze = useCallback(
+    (videoElement: HTMLVideoElement) => {
       if (!videoElement) {
         setError(
           'Camera not available. Please ensure camera access is granted.',
@@ -146,32 +62,73 @@ export function useIngredientDetection() {
         return;
       }
 
-      setIsDetecting(true);
+      setIsAnalyzing(true);
       setError(null);
-      detectedClassesRef.current.clear(); // Reset detected classes for new session
 
-      // Start detection loop with optimized timing for better UX
-      detectionIntervalRef.current = setInterval(() => {
-        detectObjects(videoElement);
-      }, 2000); // Detect every 2 seconds for stable detection
+      try {
+        // Create canvas to capture video frame
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
 
-      console.log(
-        'Started reliable ingredient detection (one at a time)',
-      );
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('Could not create canvas context');
+        }
+
+        // Draw current video frame to canvas
+        context.drawImage(videoElement, 0, 0);
+
+        // Convert canvas to blob
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              setError('Failed to capture image. Please try again.');
+              setIsAnalyzing(false);
+              return;
+            }
+
+            // Create form data with the image
+            const formData = new FormData();
+            formData.append('actionType', 'analyzeImage');
+            formData.append('image', blob, 'capture.jpg');
+
+            // Submit to server action
+            fetcher.submit(formData, {
+              method: 'post',
+              encType: 'multipart/form-data',
+            });
+          },
+          'image/jpeg',
+          0.8,
+        );
+      } catch (err) {
+        console.error('Image capture error:', err);
+        setError('Failed to capture image. Please try again.');
+        setIsAnalyzing(false);
+      }
     },
-    [modelLoaded, detectObjects],
+    [fetcher],
   );
 
-  // Stop detection
-  const stopDetection = useCallback(() => {
-    setIsDetecting(false);
-    setCurrentDetections([]);
-    if (detectionIntervalRef.current) {
-      clearInterval(detectionIntervalRef.current);
-      detectionIntervalRef.current = null;
+  // Set video reference for capture
+  const setVideoRef = useCallback(
+    (video: HTMLVideoElement | null) => {
+      videoRef.current = video;
+    },
+    [],
+  );
+
+  // Analyze current video frame
+  const analyzeCurrentFrame = useCallback(() => {
+    if (videoRef.current) {
+      captureAndAnalyze(videoRef.current);
+    } else {
+      setError(
+        'No camera feed available. Please ensure camera is active.',
+      );
     }
-    console.log('Stopped ingredient detection');
-  }, []);
+  }, [captureAndAnalyze]);
 
   // Remove ingredient from detected list
   const removeIngredient = useCallback((id: string) => {
@@ -184,7 +141,7 @@ export function useIngredientDetection() {
   const addManualIngredient = useCallback(() => {
     if (manualIngredient.trim()) {
       const newIngredient: Ingredient = {
-        id: Date.now().toString(),
+        id: `manual-${Date.now()}`,
         name: manualIngredient.trim().toLowerCase(),
         detected: false,
       };
@@ -193,41 +150,29 @@ export function useIngredientDetection() {
     }
   }, [manualIngredient]);
 
-  // Reset all ingredients
+  // Reset all ingredients and state
   const resetIngredients = useCallback(() => {
     setDetectedIngredients([]);
     setManualIngredient('');
-    setIsDetecting(false);
-    setCurrentDetections([]);
-    detectedClassesRef.current.clear(); // Clear detected classes
-    if (detectionIntervalRef.current) {
-      clearInterval(detectionIntervalRef.current);
-      detectionIntervalRef.current = null;
+    setIsAnalyzing(false);
+    setError(null);
+    // Reset fetcher state if needed
+    if (fetcher.state !== 'idle') {
+      // The fetcher will reset itself when the next navigation occurs
     }
-  }, []);
-
-  // Reset detection session (allow re-detecting same ingredients)
-  const resetDetectionSession = useCallback(() => {
-    detectedClassesRef.current.clear();
-    setCurrentDetections([]);
-    console.log(
-      'Detection session reset - can now re-detect same ingredients',
-    );
-  }, []);
+  }, [fetcher.state]);
 
   return {
     detectedIngredients,
     manualIngredient,
     setManualIngredient,
-    isDetecting,
-    modelLoaded,
+    isAnalyzing, // Changed from isDetecting to isAnalyzing
     error,
-    currentDetections,
-    startDetection,
-    stopDetection,
+    analyzeCurrentFrame, // New method to trigger analysis
+    setVideoRef, // New method to set video reference
     removeIngredient,
     addManualIngredient,
     resetIngredients,
-    resetDetectionSession,
+    isSubmitting: fetcher.state === 'submitting', // Expose fetcher state
   };
 }

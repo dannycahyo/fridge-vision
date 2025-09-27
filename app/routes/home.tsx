@@ -34,23 +34,53 @@ export function meta({}: Route.MetaArgs) {
 export async function action({ request }: Route.ActionArgs) {
   try {
     const formData = await request.formData();
-    const ingredients =
-      formData.get('ingredients')?.toString().split(',') || [];
+    const actionType = formData.get('actionType')?.toString();
 
-    if (!ingredients || ingredients.length === 0) {
-      return { error: 'No ingredients provided.' };
+    if (actionType === 'analyzeImage') {
+      // Handle image analysis with Google Vision API
+      const imageFile = formData.get('image') as File;
+
+      if (!imageFile) {
+        return { error: 'No image provided for analysis.' };
+      }
+
+      // Convert File to Buffer for Google Vision API
+      const arrayBuffer = await imageFile.arrayBuffer();
+      const imageBuffer = Buffer.from(arrayBuffer);
+
+      // Import Google Vision API function
+      const { analyzeImageForIngredients } = await import(
+        '~/lib/googleVision'
+      );
+
+      // Analyze image for ingredients
+      const result = await analyzeImageForIngredients(imageBuffer);
+
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      return { detectedIngredients: result.ingredients };
+    } else {
+      // Handle recipe generation
+      const ingredients =
+        formData.get('ingredients')?.toString().split(',') || [];
+
+      if (!ingredients || ingredients.length === 0) {
+        return { error: 'No ingredients provided.' };
+      }
+
+      // Import Gemini API function
+      const { generateRecipe } = await import('~/lib/gemini');
+
+      // Generate recipe using Gemini API
+      const recipe = await generateRecipe(ingredients);
+
+      return { recipe };
     }
-
-    // Import Gemini API function
-    const { generateRecipe } = await import('~/lib/gemini');
-
-    // Generate recipe using Gemini API
-    const recipe = await generateRecipe(ingredients);
-
-    return { recipe };
   } catch (error) {
     console.error('Action Error:', error);
-    return { error: 'Failed to generate recipe. Please try again.' };
+    return { error: 'Failed to process request. Please try again.' };
   }
 }
 
@@ -66,12 +96,10 @@ export default function Home() {
     detectedIngredients,
     manualIngredient,
     setManualIngredient,
-    isDetecting,
-    modelLoaded,
+    isAnalyzing,
     error: detectionError,
-    currentDetections,
-    startDetection,
-    stopDetection,
+    analyzeCurrentFrame,
+    setVideoRef,
     removeIngredient,
     addManualIngredient,
     resetIngredients,
@@ -94,7 +122,7 @@ export default function Home() {
   };
 
   const handleStopDetectionAndConfirm = () => {
-    stopDetection();
+    // No need to stop detection since we're using capture-based approach
     goToStep('confirming');
   };
 
@@ -144,14 +172,12 @@ export default function Home() {
 
         {currentStep === 'camera' && cameraStatus === 'granted' && (
           <CameraScreen
-            isDetecting={isDetecting}
+            isAnalyzing={isAnalyzing}
             detectedIngredients={detectedIngredients}
-            currentDetections={currentDetections}
-            modelLoaded={modelLoaded}
-            detectionError={detectionError}
-            onStartDetection={startDetection}
-            onStopDetection={stopDetection}
+            error={detectionError}
+            onCaptureAndAnalyze={analyzeCurrentFrame}
             onConfirm={handleStopDetectionAndConfirm}
+            onSetVideoRef={setVideoRef}
           />
         )}
 
