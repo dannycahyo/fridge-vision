@@ -280,8 +280,77 @@ const EXCLUDE_TERMS = [
   'liters',
 ];
 
+// Function to normalize ingredient names to their base form
+function normalizeIngredientName(text: string): string {
+  const lowerText = text.toLowerCase().trim();
+
+  // Remove common descriptors and varieties
+  const descriptorsToRemove = [
+    'fresh',
+    'organic',
+    'natural',
+    'raw',
+    'cooked',
+    'frozen',
+    'dried',
+    'canned',
+    'jarred',
+    'whole',
+    'sliced',
+    'chopped',
+    'diced',
+    'bush',
+    'cherry',
+    'grape',
+    'beefsteak',
+    'plum',
+    'roma',
+    'sweet',
+    'baby',
+    'mini',
+    'large',
+    'small',
+    'medium',
+    'red',
+    'green',
+    'yellow',
+    'white',
+    'purple',
+    'orange',
+    'wild',
+    'farmed',
+    'atlantic',
+    'pacific',
+    'ground',
+    'minced',
+    'shredded',
+    'grated',
+  ];
+
+  let normalized = lowerText;
+
+  // Remove descriptors (but keep the core ingredient)
+  descriptorsToRemove.forEach((descriptor) => {
+    // Remove descriptor if it's at the beginning followed by a space
+    normalized = normalized.replace(
+      new RegExp(`^${descriptor}\\s+`, 'g'),
+      '',
+    );
+    // Remove descriptor if it's at the end preceded by a space
+    normalized = normalized.replace(
+      new RegExp(`\\s+${descriptor}$`, 'g'),
+      '',
+    );
+  });
+
+  // Clean up any extra spaces
+  normalized = normalized.replace(/\s+/g, ' ').trim();
+
+  return normalized;
+}
+
 function filterIngredientTexts(texts: string[]): string[] {
-  const foundIngredients = new Set<string>();
+  const foundIngredients = new Map<string, string>(); // normalized -> original mapping
 
   texts.forEach((text) => {
     const lowerText = text.toLowerCase().trim();
@@ -300,6 +369,8 @@ function filterIngredientTexts(texts: string[]): string[] {
       return;
     }
 
+    let ingredientToAdd: string | null = null;
+
     // Method 1: Direct keyword matching (most reliable)
     INGREDIENT_KEYWORDS.forEach((keyword) => {
       if (lowerText.includes(keyword)) {
@@ -308,19 +379,17 @@ function filterIngredientTexts(texts: string[]): string[] {
         if (keyword === 'eggs' && lowerText.includes('egg')) {
           ingredient = 'egg';
         }
-        foundIngredients.add(ingredient);
+        ingredientToAdd = ingredient;
       }
     });
 
     // Method 2: Check if the entire text is an ingredient (exact matches)
     if (INGREDIENT_KEYWORDS.includes(lowerText)) {
-      foundIngredients.add(lowerText);
+      ingredientToAdd = lowerText;
     }
 
     // Method 3: IMPROVED - Only process texts that seem like specific food items
-    // Skip if it's just a generic food category term
-    if (!GENERIC_FOOD_TERMS.includes(lowerText)) {
-      // Check if it contains food context but isn't a generic term
+    if (!ingredientToAdd && !GENERIC_FOOD_TERMS.includes(lowerText)) {
       const hasBlacklistedWords = EXCLUDE_TERMS.some((term) =>
         lowerText.includes(term),
       );
@@ -341,13 +410,29 @@ function filterIngredientTexts(texts: string[]): string[] {
           cleaned.length > 2 &&
           !GENERIC_FOOD_TERMS.includes(cleaned)
         ) {
-          foundIngredients.add(cleaned);
+          ingredientToAdd = cleaned;
         }
+      }
+    }
+
+    // If we found an ingredient, normalize it and add to map
+    if (ingredientToAdd) {
+      const normalized = normalizeIngredientName(ingredientToAdd);
+
+      // Only add if we don't already have this normalized ingredient
+      // or if the current one is more specific (longer)
+      if (
+        !foundIngredients.has(normalized) ||
+        foundIngredients.get(normalized)!.length <
+          ingredientToAdd.length
+      ) {
+        foundIngredients.set(normalized, ingredientToAdd);
       }
     }
   });
 
-  return Array.from(foundIngredients);
+  // Return the original (potentially more specific) ingredient names
+  return Array.from(foundIngredients.values());
 }
 
 // Improved heuristic to identify likely specific food items (not generic categories)
@@ -466,27 +551,36 @@ export async function analyzeImageForIngredients(
     const ingredientTexts = filterIngredientTexts(allDetections);
 
     console.log('🥕 Filtered ingredients found:', ingredientTexts);
+    console.log(
+      '🔄 Ingredient normalization:',
+      ingredientTexts.map((name) => ({
+        original: name,
+        normalized: normalizeIngredientName(name),
+      })),
+    );
 
-    // Convert to Ingredient objects with deduplication and better confidence
+    // Convert to Ingredient objects with advanced deduplication
     const ingredientMap = new Map<string, Ingredient>();
 
     ingredientTexts.forEach((name, index) => {
       const normalizedName = name.toLowerCase().trim();
+      const baseIngredient = normalizeIngredientName(normalizedName);
 
-      // Skip if we already have this ingredient (deduplication)
-      if (!ingredientMap.has(normalizedName)) {
+      // Skip if we already have this base ingredient
+      if (!ingredientMap.has(baseIngredient)) {
         // Check if this ingredient came from a label detection (has confidence)
         const labelMatch = detectedLabelsWithConfidence.find(
           (label) =>
             label.text === normalizedName ||
-            normalizedName.includes(label.text),
+            normalizedName.includes(label.text) ||
+            label.text.includes(normalizedName),
         );
 
-        const confidence = labelMatch ? labelMatch.confidence : 0.7; // Use actual confidence or default
+        const confidence = labelMatch ? labelMatch.confidence : 0.7;
 
-        ingredientMap.set(normalizedName, {
+        ingredientMap.set(baseIngredient, {
           id: `vision-${Date.now()}-${index}`,
-          name: normalizedName,
+          name: baseIngredient, // Use the normalized base name
           confidence: confidence,
           detected: true,
         });
